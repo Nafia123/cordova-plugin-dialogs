@@ -21,6 +21,7 @@
 
 #define DIALOG_TYPE_ALERT @"alert"
 #define DIALOG_TYPE_PROMPT @"prompt"
+#define DIALOG_TYPE_LIST @"list"
 
 static void soundCompletionCallback(SystemSoundID ssid, void* data);
 static NSMutableArray *alertList = nil;
@@ -52,6 +53,7 @@ static NSMutableArray *openAlertList = nil;
                                                           handler:^(UIAlertAction * action)
         {
             CDVPluginResult* result;
+           
 
             if ([dialogType isEqualToString:DIALOG_TYPE_PROMPT])
             {
@@ -64,9 +66,24 @@ static NSMutableArray *openAlertList = nil;
             }
             else
             {
-                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)(n  + 1)];
+                if ([dialogType isEqualToString:DIALOG_TYPE_LIST]){
+                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)(n)];
+                }else {
+                    result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)(n  + 1)];
+                }
             }
 
+            [weakNotif.commandDelegate sendPluginResult:result callbackId:callbackId];
+            [openAlertList removeObject:alertController];
+        }]];
+    }
+    if ([dialogType isEqualToString:DIALOG_TYPE_LIST]) {
+        [alertController addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                            style:UIAlertActionStyleCancel
+                                                          handler:^(UIAlertAction * action)
+        {
+            CDVPluginResult* result;
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:(int)(-1)];
             [weakNotif.commandDelegate sendPluginResult:result callbackId:callbackId];
             [openAlertList removeObject:alertController];
         }]];
@@ -117,6 +134,16 @@ static NSMutableArray *openAlertList = nil;
 
     [self showDialogWithMessage:message title:title buttons:buttons defaultText:defaultText callbackId:callbackId dialogType:DIALOG_TYPE_PROMPT];
 }
+
+- (void)list:(CDVInvokedUrlCommand*)command
+{
+    NSString* callbackId = command.callbackId;
+    NSString* message = [command argumentAtIndex:0];
+    NSArray* buttons = [command argumentAtIndex:2];
+
+    [self showDialogWithMessage:message title:@"" buttons:buttons defaultText:@"" callbackId:callbackId dialogType:DIALOG_TYPE_LIST];
+}
+
 
 static void playBeep(int count) {
     SystemSoundID completeSound;
